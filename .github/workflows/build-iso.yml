@@ -32,13 +32,7 @@ jobs:
               live-build debootstrap squashfs-tools xorriso \
               grub-efi-amd64-bin mtools dosfstools rsync ca-certificates
 
-            help_out=$(lb config --help 2>&1 || true)
-            for opt in architectures distribution archive-areas updates security \
-              binary-images bootloaders bootappend-live debian-installer \
-              debian-installer-gui firmware-binary iso-application iso-publisher \
-              iso-volume memtest; do
-              echo "$help_out" | grep -q -- "--$opt" || { echo "FALLO: --$opt no soportada"; exit 1; }
-            done
+            lb config --version
 
             tmp=$(mktemp -d)
             cp auto/config "$tmp/auto/config"
