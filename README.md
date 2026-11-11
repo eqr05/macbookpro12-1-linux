@@ -52,11 +52,14 @@ partes de 1,9 GB (límite de 2 GB por archivo en releases).
 
 1. Apaga el Mac y enciéndelo con la tecla **Option (⌥)** pulsada.
 2. Elige la entrada **EFI Boot** del USB.
-3. En el escritorio live se abre **Instalar Debian** (Calamares) automáticamente.
-4. Particionado recomendado para conservar macOS/Boot Camp: elige *Manual* y crea
+3. Entra en la sesión live (usuario `macbook`, sin contraseña). No hay una entrada
+   «Install» aparte: la ISO **no incluye el instalador clásico de Debian**, solo
+   Calamares dentro de la sesión live, para que nada repartione el disco sin que tú
+   lo confirmes.
+4. Al entrar al escritorio se abre **Instalar Debian** (Calamares).
+5. Particionado recomendado para conservar macOS/Boot Camp: elige *Manual* y crea
    partición raíz ext4 sobre el espacio libre o sobre la partición que quieras reemplazar.
    Deja la ESP (`/boot/efi`) tal cual: Calamares instalará GRUB ahí.
-5. El usuario live es `macbook` y tiene sudo sin contraseña.
 
 ### Arranque posterior
 
@@ -68,6 +71,19 @@ sudo bless --mount /Volumes/EFI --setBoot --file /Volumes/EFI/EFI/debian/grubx64
 
 ## Problemas conocidos
 
+- **Pantalla congelada al arrancar la sesión live**: en el menú de GRUB pulsa `e`,
+  añade `nomodeset` al final de la línea que empieza por `linux` y arranca con
+  `Ctrl+X` (desactiva el driver gráfico y usa framebuffer). Desconecta además hubs USB,
+  discos externos y lectores de tarjetas antes de arrancar. La ISO ya mitiga los
+  cuelgues conocidos de Iris Pro 5200 con `i915.enable_psr=0 i915.enable_fbc=0`
+  e `intel_iommu=off`.
+- **Consola de diagnóstico**: si la sesión gráfica no responde pero la máquina está
+  viva, pulsa `Ctrl+Alt+F2` para pasar a una consola de texto y ejecuta `dmesg`.
+- **Windows no arranca tras un intento de instalación**: no escribas nada más y
+  repara el gestor de arranque. Desde macOS: arranca con Option y elige el disco de
+  Windows; si no aparece, monta la ESP y vuelve a bendecir el arranque de Microsoft
+  (`/Volumes/EFI/EFI/Microsoft/Boot/bootmgfw.efi`). Desde un USB de Windows:
+  `bcdboot C:\Windows /s S: /f UEFI` (siendo `S:` la ESP montada).
 - **Wi-Fi no aparece**: comprueba `dmesg | grep brcmfmac`. Si el firmware no carga, la ISO
   está corrupta; vuelve a verificar el SHA256.
 - **Sin sonido tras suspender**: el hook ya desactiva el ahorro de energía del códec.

@@ -1,6 +1,16 @@
 #!/bin/sh
 # live-build para MacBook Pro 2015 (MacBookPro11,4 / MacBookPro12,1)
 # Mac = EFI puro: grub-efi, sin syslinux.
+#
+# Sin instalador d-i a proposito: la unica via de instalacion es Calamares
+# desde la sesion live, para que nada reparticione sin confirmacion humana.
+#
+# Parametros del kernel orientados al hardware real (Iris Pro 5200 / HM87):
+#   intel_iommu=off        la tabla DMAR de Apple cuelga el arranque con IOMMU
+#   i915.enable_psr=0      PSR da cuelgues en Haswell GT3e
+#   i915.enable_fbc=0      FBC idem
+#   usbcore.autosuspend=-1 evita suspensiones raras del hub USB
+#   ignore_loglevel        sin 'quiet': si algo falla, se lee en pantalla
 lb config noauto \
 	--architectures amd64 \
 	--distribution trixie \
@@ -9,9 +19,9 @@ lb config noauto \
 	--security true \
 	--binary-images iso-hybrid \
 	--bootloaders "grub-efi" \
-	--bootappend-live "boot=live components quiet username=macbook hostname=macbook locales=es_ES.UTF-8 keyboard-layouts=es keyboard-model=macintosh timezone=Europe/Madrid" \
-	--debian-installer live \
-	--debian-installer-gui true \
+	--compression zstd \
+	--bootappend-live "boot=live components username=macbook hostname=macbook locales=es_ES.UTF-8 keyboard-layouts=es keyboard-model=macintosh timezone=Europe/Madrid intel_iommu=off i915.enable_psr=0 i915.enable_fbc=0 usbcore.autosuspend=-1 ignore_loglevel" \
+	--debian-installer none \
 	--firmware-binary true \
 	--iso-application "MacBook Linux - Debian 13 XFCE" \
 	--iso-publisher "MacBook Linux" \
