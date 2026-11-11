@@ -35,6 +35,7 @@ jobs:
             lb config --version
 
             tmp=$(mktemp -d)
+            mkdir -p "$tmp/auto"
             cp auto/config "$tmp/auto/config"
             chmod +x "$tmp/auto/config"
             ( cd "$tmp" && ./auto/config )
