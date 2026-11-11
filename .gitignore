@@ -1,0 +1,15 @@
+binary/
+binary.*
+chroot/
+chroot.*
+cache/
+cache.*
+*.iso
+iso/
+build-wsl.log
+config/bootstrap
+config/binary
+config/chroot
+config/common
+config/source
+config/debian-installer

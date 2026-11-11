@@ -1,0 +1,39 @@
+#!/bin/sh
+set -e
+
+# Teclado de consola para teclado Apple (ISO español)
+cat > /etc/default/keyboard <<'EOF'
+XKBMODEL="macintosh"
+XKBLAYOUT="es"
+XKBVARIANT=""
+XKBOPTIONS=""
+BACKSPACE="guess"
+EOF
+
+# Locale español
+touch /etc/locale.gen
+grep -q '^es_ES.UTF-8 UTF-8' /etc/locale.gen || echo 'es_ES.UTF-8 UTF-8' >> /etc/locale.gen
+locale-gen
+update-locale LANG=es_ES.UTF-8 LANGUAGE=es
+
+# Zona horaria
+echo Europe/Madrid > /etc/timezone
+ln -sf /usr/share/zoneinfo/Europe/Madrid /etc/localtime
+
+# Evitar chasquidos del codec CS4208 y clics de audio al suspender
+echo 'options snd_hda_intel power_save=0 power_save_controller=N' > /etc/modprobe.d/macbook-audio.conf
+
+# Cargar Wi-Fi Broadcom BCM43602 en el initramfs (útil tras suspender)
+echo brcmfmac > /etc/initramfs-tools/modules
+update-initramfs -u >/dev/null 2>&1 || true
+
+# Servicios del entorno live
+systemctl enable lightdm.service >/dev/null 2>&1 || true
+systemctl enable NetworkManager.service >/dev/null 2>&1 || true
+systemctl enable bluetooth.service >/dev/null 2>&1 || true
+
+# sudo sin contraseña para el usuario live (por si cambia el nombre de usuario)
+printf '%s\n' \
+	'macbook ALL=(ALL) NOPASSWD:ALL' \
+	'user ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/010-live-sudo
+chmod 0440 /etc/sudoers.d/010-live-sudo

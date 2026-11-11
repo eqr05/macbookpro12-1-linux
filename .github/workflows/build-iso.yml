@@ -1,0 +1,71 @@
+name: Construir ISO
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+
+    steps:
+      - name: Descargar codigo
+        uses: actions/checkout@v4
+
+      - name: Liberar espacio
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          docker system prune -af --volumes
+
+      - name: Compilar ISO en Debian 13
+        run: |
+          docker run --privileged --rm -v "$PWD:/work" -w /work debian:trixie bash -eux -c '
+            export DEBIAN_FRONTEND=noninteractive
+            apt-get update
+            apt-get install -y --no-install-recommends \
+              live-build debootstrap squashfs-tools xorriso \
+              grub-efi-amd64-bin mtools dosfstools rsync ca-certificates
+
+            help_out=$(lb config --help 2>&1 || true)
+            for opt in architectures distribution archive-areas updates security \
+              binary-images bootloaders bootappend-live debian-installer \
+              debian-installer-gui firmware-binary iso-application iso-publisher \
+              iso-volume memtest; do
+              echo "$help_out" | grep -q -- "--$opt" || { echo "FALLO: --$opt no soportada"; exit 1; }
+            done
+
+            tmp=$(mktemp -d)
+            cp auto/config "$tmp/auto/config"
+            chmod +x "$tmp/auto/config"
+            ( cd "$tmp" && ./auto/config )
+            test -d "$tmp/config"
+
+            chmod +x build.sh auto/config config/hooks/live/*.hook.chroot
+            ./build.sh
+
+            ls -lh live-image-amd64.hybrid.iso
+            sha256sum live-image-amd64.hybrid.iso > SHA256SUMS
+            unsquashfs -l binary/live/filesystem.squashfs | grep -q brcmfmac43602-pcie.bin
+            unsquashfs -l binary/live/filesystem.squashfs | grep -q calamares
+          '
+
+      - name: Trocear ISO
+        run: |
+          split -b 1900M --numeric-suffixes=1 --suffix-length=2 \
+            live-image-amd64.hybrid.iso macbook-linux.iso.part
+          ls -lh macbook-linux.iso.part* SHA256SUMS
+
+      - name: Publicar Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="build-${GITHUB_RUN_NUMBER}"
+          gh release create "$tag" macbook-linux.iso.part* SHA256SUMS \
+            --title "MacBook Linux ISO build ${GITHUB_RUN_NUMBER}" \
+            --notes "Debian 13 XFCE para MacBook Pro 2015. Une las partes: Windows -> copy /b macbook-linux.iso.part* macbook-linux.iso ; Linux/macOS -> cat macbook-linux.iso.part* > macbook-linux.iso. Verifica con SHA256SUMS."

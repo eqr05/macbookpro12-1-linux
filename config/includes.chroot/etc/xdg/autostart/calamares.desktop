@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Instalar Debian
+Comment=Instalador Calamares para MacBook Linux
+Exec=sudo calamares
+Icon=calamares
+Terminal=false
+OnlyShowIn=XFCE;
+X-GNOME-Autostart-Delay=3
