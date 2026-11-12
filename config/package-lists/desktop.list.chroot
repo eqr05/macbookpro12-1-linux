@@ -7,6 +7,7 @@ xfce4-whiskermenu-plugin
 xfce4-pulseaudio-plugin
 pavucontrol
 thunar
+thunar-volman
 mousepad
 ristretto
 lightdm
@@ -30,10 +31,14 @@ htop
 gparted
 parted
 gdisk
+udisks2
+gvfs
+gvfs-backends
 dosfstools
 e2fsprogs
 exfatprogs
 ntfs-3g
+hfsprogs
 locales
 tzdata
 systemd-sysv

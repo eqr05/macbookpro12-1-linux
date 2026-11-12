@@ -19,7 +19,7 @@ lb config noauto \
 	--security true \
 	--binary-images iso-hybrid \
 	--bootloaders "grub-efi" \
-	--bootappend-live "boot=live components username=macbook hostname=macbook locales=es_ES.UTF-8 keyboard-layouts=es keyboard-model=macintosh timezone=Europe/Madrid intel_iommu=off i915.enable_psr=0 i915.enable_fbc=0 usbcore.autosuspend=-1 ignore_loglevel" \
+	--bootappend-live "boot=live components username=macbook hostname=macbook locales=es_ES.UTF-8 keyboard-layouts=es keyboard-model=macintosh timezone=Europe/Madrid nomodeset intel_iommu=off i915.enable_psr=0 i915.enable_fbc=0 usbcore.autosuspend=-1 ignore_loglevel" \
 	--debian-installer none \
 	--firmware-binary true \
 	--iso-application "MacBook Linux - Debian 13 XFCE" \

@@ -1,0 +1,12 @@
+[Unit]
+Description=Montar particiones internas de datos (NTFS, FAT, exFAT, ext4, HFS+)
+Documentation=man:mount(8)
+After=local-fs.target
+# No se ejecuta en la sesion live: asi Calamares nunca encuentra montada
+# una particion que no ha montado el, y en el live se monta con un clic.
+ConditionKernelCommandLine=!boot=live
+ConditionPathExists=/usr/local/sbin/montar-discos
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/montar-discos

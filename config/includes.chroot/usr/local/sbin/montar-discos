@@ -1,0 +1,112 @@
+#!/bin/sh
+# montar-discos: monta las particiones internas de datos en /media/<etiqueta>.
+# Cubre NTFS (Windows/Boot Camp), FAT/exFAT, ext2/3/4, HFS+ y similares.
+# Los discos extraibles (USB, SD) los gestiona Thunar/udisks, asi que aqui se
+# omiten para no competir con el escritorio.
+# Nunca es fatal: si una particion no se puede montar, se registra y se sigue.
+
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+BASE=/media
+
+log() {
+	echo "montar-discos: $*"
+	if [ -x /usr/bin/logger ]; then
+		logger -t montar-discos -- "$*" 2>/dev/null || true
+	fi
+}
+
+campo() {
+	# PKNAME se renombra para que no coincida con NAME al parsear
+	printf ' %s\n' "$1" | sed 's/ PKNAME=/ PARENT=/' |
+		sed -n "s/.*[[:space:]]$2=\"\\([^\"]*\\)\".*/\\1/p"
+}
+
+dueno=$(getent passwd 2>/dev/null | awk -F: '$3>=1000 && $3<65000 {print $3":"$4; exit}')
+U=${dueno%%:*}
+G=${dueno##*:}
+[ -n "$U" ] || U=1000
+[ -n "$G" ] || G=1000
+
+lsblk -Pno NAME,FSTYPE,LABEL,MOUNTPOINT,PARTTYPE,TYPE,PKNAME 2>/dev/null |
+while IFS= read -r linea; do
+	dev=$(campo "$linea" NAME)
+	tipo=$(campo "$linea" FSTYPE)
+	etiqueta=$(campo "$linea" LABEL)
+	punto=$(campo "$linea" MOUNTPOINT)
+	parttype=$(campo "$linea" PARTTYPE)
+	naturaleza=$(campo "$linea" TYPE)
+	padre=$(campo "$linea" PARENT)
+
+	[ -n "$dev" ] || continue
+	[ -n "$tipo" ] || continue
+	# Ya montada (incluye el medio live, que vive en /run/live/medium)
+	[ -n "$punto" ] && continue
+
+	case "$tipo" in
+		swap|crypto_LUKS|LVM2_member|linux_raid_member|zfs_member|iso9660|squashfs|udf)
+			continue
+			;;
+	esac
+
+	# Particion de sistema EFI: no se toca
+	[ "$parttype" = "c12a7328-f81f-11d2-ba4b-00a0c93ec93b" ] && continue
+	case "$etiqueta" in
+		EFI|"EFI System"|"EFI system partition"|ESP)
+			continue
+			;;
+	esac
+
+	# Discos extraibles: deja que Thunar/udisks hagan el automontaje
+	if [ "$naturaleza" = "disk" ]; then
+		disco=$dev
+	else
+		disco=$padre
+	fi
+	if [ -n "$disco" ] && [ -r "/sys/block/$disco/removable" ]; then
+		[ "$(cat "/sys/block/$disco/removable")" = "1" ] && continue
+	fi
+
+	# Si ya la monta /etc/fstab, no duplicar
+	uuid=$(blkid -s UUID -o value "/dev/$dev" 2>/dev/null)
+	if [ -n "$uuid" ] && grep -qs "UUID=$uuid" /etc/fstab; then
+		continue
+	fi
+	grep -qs "/dev/$dev[[:space:]]" /etc/fstab && continue
+
+	nombre=$(printf '%s' "$etiqueta" | tr -c 'A-Za-z0-9._-' '_' | sed 's/^[._-]*//; s/[._-]*$//')
+	[ -n "$nombre" ] || nombre="disco-$dev"
+
+	mnt="$BASE/$nombre"
+	n=2
+	while [ -e "$mnt" ] && [ -n "$(ls -A "$mnt" 2>/dev/null)" ]; do
+		mnt="$BASE/$nombre-$n"
+		n=$((n + 1))
+	done
+
+	case "$tipo" in
+		vfat|msdos|exfat)
+			opciones="rw,uid=$U,gid=$G,umask=0000"
+			;;
+		ntfs|ntfs3)
+			opciones="rw,uid=$U,gid=$G,umask=0000"
+			;;
+		*)
+			opciones="rw"
+			;;
+	esac
+
+	mkdir -p "$mnt" 2>/dev/null || continue
+	if mount -o "$opciones" "/dev/$dev" "$mnt" 2>/dev/null; then
+		log "/dev/$dev ($tipo) montado en $mnt"
+		chmod 0777 "$mnt" 2>/dev/null || true
+		continue
+	fi
+	if mount -o ro "/dev/$dev" "$mnt" 2>/dev/null; then
+		log "/dev/$dev ($tipo) montado en $mnt en solo lectura"
+		continue
+	fi
+	log "/dev/$dev ($tipo) no se pudo montar; se omite"
+	rmdir "$mnt" 2>/dev/null || true
+done
+
+exit 0

@@ -46,8 +46,13 @@ jobs:
 
             ls -lh live-image-amd64.hybrid.iso
             sha256sum live-image-amd64.hybrid.iso > SHA256SUMS
+            test -s binary/live/filesystem.squashfs
             unsquashfs -l binary/live/filesystem.squashfs | grep -q brcmfmac43602-pcie.bin
             unsquashfs -l binary/live/filesystem.squashfs | grep -q calamares
+            unsquashfs -l binary/live/filesystem.squashfs | grep -q 'usr/local/sbin/montar-discos'
+            unsquashfs -l binary/live/filesystem.squashfs | grep -q 'usr/share/macbook-linux/Comandos-Linux.txt'
+            unsquashfs -l binary/live/filesystem.squashfs | grep -q 'etc/default/grub.d/99-macbook-nomodeset.cfg'
+            unsquashfs -cat binary/live/filesystem.squashfs etc/default/grub.d/99-macbook-nomodeset.cfg | grep -q nomodeset
           '
 
       - name: Trocear ISO

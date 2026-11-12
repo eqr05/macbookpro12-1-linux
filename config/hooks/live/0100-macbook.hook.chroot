@@ -32,6 +32,23 @@ systemctl enable lightdm.service >/dev/null 2>&1 || true
 systemctl enable NetworkManager.service >/dev/null 2>&1 || true
 systemctl enable bluetooth.service >/dev/null 2>&1 || true
 
+# Automontaje de particiones internas (tambien queda activo tras instalar)
+chmod 0755 /usr/local/sbin/montar-discos
+chmod 0644 /etc/systemd/system/montar-discos.service /etc/udev/rules.d/99-montar-discos.rules
+systemctl enable montar-discos.service >/dev/null 2>&1 || true
+
+# Guia en espanol: en el escritorio del live y en /etc/skel para que el
+# usuario creado por Calamares tambien la reciba
+chmod 0755 /usr/local/bin/colocar-ayuda.sh
+chmod 0644 /etc/xdg/autostart/91-ayuda-macbook.desktop
+chmod 0644 /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/thunar-volman.xml
+mkdir -p /etc/skel/Escritorio
+cp /usr/share/macbook-linux/Comandos-Linux.txt /etc/skel/Escritorio/Comandos-Linux.txt
+chmod 0644 /etc/skel/Escritorio/Comandos-Linux.txt
+
+# Extras que Calamares instala solo en el sistema instalado
+chmod 0644 /etc/calamares/modules/packages.conf
+
 # sudo sin contraseña para el usuario live (por si cambia el nombre de usuario)
 printf '%s\n' \
 	'macbook ALL=(ALL) NOPASSWD:ALL' \

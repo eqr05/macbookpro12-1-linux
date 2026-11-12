@@ -1,0 +1,365 @@
+================================================================
+  MACBOOK LINUX - Guia rapida en espanol
+  Debian 13 (trixie) + XFCE para MacBook Pro 2015
+  (MacBookPro11,4 de 15" / MacBookPro12,1 de 13")
+================================================================
+
+Esta ISO arranca en modo live (usuario "macbook", sin contrasena) y
+trae Calamares para instalar en el disco. El sistema instalado hereda
+todo lo que hay aqui: drivers, automontaje de discos y esta guia.
+
+Consejo general: casi todo lo que necesitas se hace con "sudo"
+(derechos de administrador). En la terminal, Ctrl+Mayus+C copia y
+Ctrl+Mayus+V pega; Ctrl+C cancela un comando.
+
+Tambien puedes pedir ayuda a cualquier comando:
+    man ls            manual completo
+    ls --help         resumen de opciones
+    apropos red       busca comandos relacionados con "red"
+
+
+----------------------------------------------------------------
+1. COMANDOS ESENCIALES
+----------------------------------------------------------------
+pwd                 muestra la carpeta actual
+ls -l               lista archivos con detalles
+ls -la              incluye archivos ocultos
+cd /ruta            entra en una carpeta
+cd ..               sube un nivel
+cd ~                va a tu carpeta personal
+
+cat archivo         muestra un archivo de texto
+less archivo        lo muestra paginado (q para salir)
+nano archivo        editor sencillo (Ctrl+O guardar, Ctrl+X salir)
+mousepad archivo    editor grafico
+
+cp a b              copia
+cp -r carpeta destino   copia carpeta completa
+mv a b              mueve o renombra
+rm archivo          borra (no va a la papelera)
+rm -r carpeta       borra carpeta y su contenido
+mkdir carpeta       crea carpeta
+mkdir -p a/b/c      crea toda la ruta
+
+df -h               espacio libre por disco
+du -sh carpeta      tamano de una carpeta
+free -h             memoria RAM en uso
+uname -a            version del kernel
+uptime              tiempo encendido y carga
+whoami              usuario actual
+id                  usuarios y grupos
+
+
+----------------------------------------------------------------
+2. BUSCAR ARCHIVOS Y TEXTO
+----------------------------------------------------------------
+find ~ -name "*.pdf"        busca archivos por nombre
+find / -size +100M 2>/dev/null   archivos mayores de 100 MB
+grep -rn "palabra" ~/       busca texto dentro de archivos
+locate archivo              busqueda instantanea (paquete mlocate)
+which programa              ruta del ejecutable
+
+
+----------------------------------------------------------------
+3. USUARIOS Y PERMISOS
+----------------------------------------------------------------
+sudo comando        ejecuta como administrador
+sudo -i             consola de root
+passwd              cambia tu contrasena
+sudo adduser ana    crea un usuario
+sudo usermod -aG sudo ana   le da permisos de administrador
+ls -l               ver permisos (rwx)
+chmod +x script.sh  hace ejecutable un archivo
+chown usuario archivo       cambia el dueno
+
+En este equipo el usuario live "macbook" tiene sudo sin contrasena.
+El usuario que crees durante la instalacion usara su contrasena.
+
+
+----------------------------------------------------------------
+4. INSTALAR PROGRAMAS (apt)
+----------------------------------------------------------------
+sudo apt update                 actualiza la lista de paquetes
+sudo apt upgrade                instala actualizaciones
+sudo apt full-upgrade           actualiza todo, incluido el kernel
+sudo apt install paquete        instala
+sudo apt remove paquete         desinstala
+sudo apt search palabra         busca paquetes
+apt list --installed            que hay instalado
+sudo apt autoremove             limpia dependencias sobrantes
+sudo dpkg --configure -a        repara una instalacion a medias
+
+Repositorios activos: main, contrib, non-free y non-free-firmware
+(hacen falta para Wi-Fi Broadcom y microcodigo Intel).
+
+
+----------------------------------------------------------------
+5. RED Y WI-FI
+----------------------------------------------------------------
+nmcli device status             estado de las conexiones
+nmcli device wifi list          redes Wi-Fi visibles
+nmcli device wifi connect "MI-RED" password "clave"
+nmcli connection show           conexiones guardadas
+nmcli connection up "MI-RED"    reconectar
+sudo nmcli networking off       apagar todo
+sudo nmcli networking on        encender todo
+
+ip a                            direcciones IP
+ip route                        puerta de enlace
+ping -c 4 1.1.1.1               prueba de red
+ping -c 4 deb.debian.org        prueba de DNS
+curl -I https://deb.debian.org  prueba HTTP
+ss -tulpn                       puertos abiertos
+
+La interfaz Wi-Fi es wlp3s0 (Broadcom BCM43602 con brcmfmac).
+La Ethernet USB funciona como enxf01e341f4d78 o similar.
+Bluetooth: blueman en el menu, o "bluetoothctl" en consola.
+
+
+----------------------------------------------------------------
+6. DISCOS, PARTICIONES Y AUTOMONTAJE
+----------------------------------------------------------------
+lsblk -f                discos, particiones, sistemas de archivos
+sudo blkid              UUID y tipos
+df -hT                  que esta montado y cuanto espacio queda
+sudo fdisk -l           tabla de particiones
+sudo gparted            editor grafico (cuidado: cambia el disco)
+
+Montar y desmontar a mano:
+    sudo mount /dev/sda2 /mnt
+    sudo mount -o ro /dev/sda2 /mnt     solo lectura
+    sudo umount /mnt
+
+AUTOMONTAJE INCLUIDO
+  - En la sesion live los discos se montan con un clic desde Thunar
+    (el automontaje de unidades y medios esta activado). Los discos
+    internos no se montan solos a proposito, para que Calamares no
+    encuentre particiones ocupadas mientras instalas.
+
+  - En el sistema instalado, un servicio llamado montar-discos monta
+    las particiones internas al arrancar y cuando aparecen, en
+    /media/<etiqueta>. Para verlo:
+        systemctl status montar-discos.service
+        journalctl -t montar-discos -b
+        ls /media
+    Para montarlas ahora mismo sin reiniciar:
+        sudo systemctl start montar-discos.service
+    Se omiten a proposito: swap, LUKS, LVM, RAID, la particion EFI,
+    el medio live y los discos USB/SD (de esos se encarga el escritorio).
+
+  - USB, tarjetas SD y camaras: los monta Thunar automaticamente
+    (automontaje de unidades y medios activado). Aparecen en el panel
+    lateral del gestor de archivos, con boton para expulsar.
+
+  - Si Windows esta hibernado o con "Inicio rapido", NTFS puede
+    negarse a montarse en escritura. El servicio reintenta en solo
+    lectura. Arranca Windows una vez, desactiva el Inicio rapido y
+    apaga del todo para poder escribir.
+
+  - ntfs-3g (NTFS), exfatprogs (exFAT), hfsprogs (HFS+) y dosfstools
+    (FAT) ya estan instalados.
+  - Comprobar un sistema de archivos: sudo fsck.vfat -n /dev/sdX1
+    (o fsck.ext4, fsck.exfat, fsck.hfsplus; con -n solo comprueba).
+
+
+----------------------------------------------------------------
+7. SISTEMA, SERVICIOS Y LOGS
+----------------------------------------------------------------
+systemctl status             servicios activos y fallos
+systemctl --failed           solo los que fallaron
+sudo systemctl restart NetworkManager
+sudo systemctl enable servicio     arranca con el sistema
+sudo systemctl disable servicio    lo quita del arranque
+
+journalctl -b                log de este arranque
+journalctl -b -p err         solo errores
+journalctl -f                sigue el log en vivo
+dmesg | less                 mensajes del kernel
+dmesg | grep -i firmware     problemas de firmware
+journalctl -u NetworkManager -b
+
+Apagar / reiniciar:
+    sudo poweroff
+    sudo reboot
+
+
+----------------------------------------------------------------
+8. ESTE MACBOOK: VIDEO, NOMODESET Y DRIVERS
+----------------------------------------------------------------
+La Iris Pro 5200 (i915) cuelga el arranque con el kernel 6.12 de
+trixie, por eso esta ISO arranca con "nomodeset" (framebuffer EFI y
+render por software). El sistema instalado lo hereda gracias a
+/etc/default/grub.d/99-macbook-nomodeset.cfg.
+
+Consecuencias: sin aceleracion 3D, sin salidas HDMI/DisplayPort y
+sin audio por HDMI (dmesg lo avisa: "requires binding with gfx
+driver"). El panel del portatil, el teclado, el trackpad, el Wi-Fi,
+el Bluetooth, los altavoces y la Ethernet USB funcionan normal.
+
+  Ver que driver esta activo:
+      lspci -k | grep -A3 -i vga
+  Probar el driver i915 (puede colgar: hazlo con el Mac enchufado
+  y con un USB de rescate a mano):
+      sudo rm /etc/default/grub.d/99-macbook-nomodeset.cfg
+      sudo update-grub
+      sudo reboot
+  Si vuelve a colgarse, arranca el live y vuelve a poner el archivo,
+  o edita GRUB y anade nomodeset a mano.
+
+Hardware detectado y estado:
+  - Wi-Fi: brcmfmac + firmware-brcm80211 (wlp3s0)      OK
+  - Bluetooth: btusb + bluez-firmware                   OK
+  - Audio: snd_hda_intel + CS4208 (sin HDMI por nomodeset)
+  - Trackpad: bcm5974 + libinput (tapping y scroll natural)
+  - Ethernet USB: r8152
+  - Teclado: modelo macintosh, distribucion es
+  - Sensores y ventiladores: mbpfan (se instala con el sistema)
+      systemctl status mbpfan
+      sudo nano /etc/mbpfan.conf      ajustar temperaturas
+
+Consola de texto si la sesion grafica falla: Ctrl+Alt+F2.
+Volver al escritorio: Ctrl+Alt+F7 (o F1).
+
+
+----------------------------------------------------------------
+9. QEMU: MAQUINAS VIRTUALES EN LINUX
+----------------------------------------------------------------
+QEMU permite probar esta misma ISO, Windows u otra distribucion sin
+tocar el disco. Instalacion (paquetes qemu-system-x86 y qemu-utils):
+
+    sudo apt install qemu-system-x86 qemu-utils
+
+Crear un disco virtual de 20 GB:
+    qemu-img create -f qcow2 disco.qcow2 20G
+
+Arrancar con esa ISO (sustituye el nombre por el tuyo):
+    qemu-system-x86_64 -enable-kvm -cpu host -m 4096 -smp 2 \
+        -drive file=disco.qcow2,if=virtio \
+        -cdrom macbook-linux.iso -boot d
+
+Opciones utiles:
+    -m 4096            RAM en MB
+    -smp 2             nucleos
+    -enable-kvm        aceleracion (comprueba: ls -l /dev/kvm)
+    -cpu host          expone las instrucciones del Mac (mas rapido)
+    -display gtk       ventana; usa "-nographic" para solo terminal
+    -netdev user,id=n0 -device virtio-net-pci,netdev=n0
+    -usb -device usb-tablet      raton sin capturar el puntero
+    Ctrl+Alt+2         monitor de QEMU;  Ctrl+Alt+1  vuelve a la VM
+    Ctrl+Alt+G         liberar el teclado y el raton
+
+Arranque UEFI (necesitas el paquete ovmf):
+    qemu-system-x86_64 -enable-kvm -m 4096 \
+        -drive if=pflash,format=raw,readonly=on:/usr/share/OVMF/OVMF_CODE.fd \
+        -drive file=disco.qcow2,if=virtio \
+        -cdrom macbook-linux.iso -boot d
+
+Red compartida con el anfitrion: la VM sale a internet por NAT y
+llega al anfitrion en 10.0.2.2 (si usas slirp). Para pasar archivos,
+lo mas simple es un servidor HTTP temporal:
+    python3 -m http.server 8000        (en el anfitrion)
+    curl -O http://10.0.2.2:8000/archivo
+
+Nota: /dev/kvm necesita VT-x activado (en estos Mac viene activo).
+Si no existe, quita -enable-kvm: funcionara en emulacion, mucho mas
+lento. QEMU 11.1 (Windows, sin aceleracion) se uso como entorno
+auxiliar al preparar esta ISO.
+
+
+----------------------------------------------------------------
+10. ASISTENTES DE IA EN LINUX
+----------------------------------------------------------------
+El asistente que preparo esta ISO trabaja desde fuera de Linux
+(Windows) generando los archivos del proyecto; no es un programa que
+se ejecute dentro del sistema. Dentro de Linux tienes estas opciones:
+
+A) Asistentes de terminal (requieren cuenta o clave de API)
+   Se instalan con Node.js 20 o superior:
+       sudo apt install nodejs npm
+       node --version
+       sudo npm install -g <paquete-oficial>
+   Ejemplos conocidos (consulta la web oficial de cada uno para el
+   nombre exacto y la forma de autenticarte):
+       - Claude Code        @anthropic-ai/claude-code
+       - Gemini CLI         @google/gemini-cli
+       - OpenAI Codex CLI   @openai/codex
+   Tambien existe Qoder, el entorno con el que se creo esta ISO:
+   se descarga desde su pagina oficial (no esta en apt).
+   Todos piden una clave de API o iniciar sesion la primera vez.
+
+B) Modelos locales, sin cuenta ni internet
+       Descarga Ollama desde https://ollama.com y luego:
+       ollama run qwen2.5:3b        (primer uso: descarga el modelo)
+       ollama list                  modelos instalados
+       ollama rm modelo             borrar uno
+   Tambien sirve para programar: extensiones como Continue o Cline
+   (VS Code / VSCodium) se conectan a Ollama en localhost:11434.
+
+C) Asistentes con interfaz grafica
+   Cualquier navegador (Firefox ESR viene instalado) sirve para los
+   asistentes web. Los de escritorio se instalan con su .deb oficial.
+
+Requisitos y consejos para este MacBook:
+   - 8 a 16 GB de RAM: los modelos de 1-4 mil millones de parametros
+     funcionan; los grandes no caben en memoria.
+   - Con nomodeset no hay aceleracion por GPU: la IA local corre en
+     CPU. Es normal que vaya lenta; usa modelos pequenos.
+   - Vigila el espacio: cada modelo ocupa entre 2 y 8 GB en ~/.ollama.
+   - El Wi-Fi funciona, pero cada descarga consume datos: instala
+     primero lo imprescindible.
+
+
+----------------------------------------------------------------
+11. ATAJOS Y TECLAS EN XFCE (TECLADO MAC)
+----------------------------------------------------------------
+En Linux la tecla Command (⌘) es la tecla "Super"/Windows.
+  Super            abre el menu Whisker
+  Ctrl+Alt+T       terminal
+  Ctrl+Alt+L       bloquear sesion
+  Alt+F2           ejecutar un comando
+  Alt+F4           cerrar ventana
+  Ctrl+Alt+Flechas cambiar de escritorio
+  Ctrl+Shift+C/V   copiar/pegar en la terminal
+  Impr Pant        captura de pantalla
+  fn+Supr          Supr real (sin fn borra hacia delante igual)
+  Tecla F5/F6      brillo; F10-F12 volumen con fn
+
+El trackpad tiene tapping (toque = clic), dos dedos = scroll natural,
+tres dedos = clic con el boton central configurado por libinput.
+
+
+----------------------------------------------------------------
+12. PROBLEMAS RAPIDOS
+----------------------------------------------------------------
+Pantalla negra o congelada al arrancar  -> falta nomodeset; edita
+    GRUB en el menu (tecla e) y anade nomodeset en la linea "linux".
+Windows no arranca tras instalar Linux  -> desde macOS, bendice de
+    nuevo /Volumes/EFI/EFI/Microsoft/Boot/bootmgfw.efi; desde un USB
+    de Windows: bcdboot C:\Windows /s S: /f UEFI
+No aparece el Wi-Fi                     -> dmesg | grep brcmfmac
+    y rfkill list (desbloquea: sudo rfkill unblock all)
+Sin sonido                              -> alsamixer (F6 elige CS4208)
+Teclado con layout equivocado           -> sudo dpkg-reconfigure
+    keyboard-configuration
+El disco NTFS no se monta               -> apaga Windows con Inicio
+    rapido desactivado, o revisa journalctl -t montar-discos -b
+USB no se automonta                     -> comprueba que Thunar esta
+    abierto; ajustes en Editar > Preferencias > Avanzado
+Se llena el disco                       -> sudo apt clean; revisa
+    ~/.cache con du -sh ~/.cache/*
+
+
+----------------------------------------------------------------
+13. COMO SE CONSTRUYO ESTA ISO
+----------------------------------------------------------------
+- Base: Debian 13 "trixie" amd64, UEFI, grub-efi, sin syslinux.
+- Herramienta: live-build 3.x (paquetes de trixie).
+- Compilacion: GitHub Actions, contenedor debian:trixie, cada build
+  verifica que el firmware Broadcom y Calamares esten en el squashfs.
+- Instalador: solo Calamares (no hay instalador clasico de Debian),
+  para que nada reparta el disco sin confirmacion.
+- Pruebas: MacBookPro11,4 real; QEMU 11.1 en Windows como apoyo.
+- Repositorio y releases: github.com/eqr05/macbookpro12-1-linux
+
+Version de esta guia: build-6 (12-11-2026)
+================================================================

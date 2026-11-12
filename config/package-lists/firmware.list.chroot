@@ -2,4 +2,5 @@ firmware-linux-free
 firmware-brcm80211
 firmware-misc-nonfree
 firmware-intel-sound
+bluez-firmware
 intel-microcode

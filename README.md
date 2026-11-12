@@ -15,7 +15,39 @@ en una Debian normal: Wi-Fi Broadcom BCM43602, audio Intel, microcódigo y tecla
 | Audio | `firmware-intel-sound`, PipeWire, `snd_hda_intel power_save=0` |
 | Teclado | distribución `es`, modelo `macintosh`, consola y X11 |
 | Trackpad | libinput con tapping, scroll natural y clickfinger |
-| Extra | Firefox ESR, GParted, Blueman, NTFS/ExFAT, microcódigo Intel |
+| Automontaje | Thunar + udisks para USB/SD y servicio `montar-discos` para particiones internas (NTFS, FAT, exFAT, ext4, HFS+) |
+| Ayuda | `Comandos-Linux.txt` en el escritorio (comandos, discos, QEMU, IA en Linux) |
+| Extra | Firefox ESR, GParted, Blueman, NTFS/ExFAT/HFS+, microcódigo Intel |
+
+## Automontaje de discos
+
+Hay dos capas, para no pisarse:
+
+- **Live**: automontaje de Thunar (`thunar-volman` + `gvfs-backends`) para USB,
+  tarjetas SD y cámaras. Los discos internos se montan con un clic para que
+  Calamares no encuentre particiones ocupadas durante la instalación (el
+  servicio lleva `ConditionKernelCommandLine=!boot=live`).
+- **Sistema instalado**: además, el servicio `montar-discos` monta las
+  particiones internas (Boot Camp NTFS, FAT, exFAT, ext4, HFS+) al arrancar y
+  cuando aparecen, en `/media/<etiqueta>`, en lectura/escritura y con reintento
+  en solo lectura. Se saltan swap, LUKS, LVM, RAID, la partición EFI, el medio
+  live y los discos extraíbles. Manual: `sudo systemctl start
+  montar-discos.service` y `journalctl -t montar-discos -b`.
+
+## Solo en el sistema instalado
+
+Calamares ejecuta el módulo `packages` (con `try_install` y
+`skip_if_no_internet`), así que el live no se infla pero el sistema instalado
+recibe, si hay red: `mbpfan` (ventiladores y sensores del Mac), `qemu-system-x86`
+y `qemu-utils` para máquinas virtuales. Si no hay internet, la instalación
+termina igual y esos extras se pueden poner después con `apt`.
+
+## Ayuda en español
+
+`Comandos-Linux.txt` se copia al escritorio del live y, vía `/etc/skel` y un
+autostart idempotente, al del usuario que crees al instalar. Incluye comandos
+básicos, `apt`, red/Wi-Fi, discos y automontaje, logs, `nomodeset`, QEMU y
+asistentes de IA en Linux. También queda en `/usr/share/macbook-linux/`.
 
 ## Obtener la ISO
 
@@ -71,12 +103,14 @@ sudo bless --mount /Volumes/EFI --setBoot --file /Volumes/EFI/EFI/debian/grubx64
 
 ## Problemas conocidos
 
-- **Pantalla congelada al arrancar la sesión live**: en el menú de GRUB pulsa `e`,
-  añade `nomodeset` al final de la línea que empieza por `linux` y arranca con
-  `Ctrl+X` (desactiva el driver gráfico y usa framebuffer). Desconecta además hubs USB,
-  discos externos y lectores de tarjetas antes de arrancar. La ISO ya mitiga los
-  cuelgues conocidos de Iris Pro 5200 con `i915.enable_psr=0 i915.enable_fbc=0`
-  e `intel_iommu=off`.
+- **Pantalla congelada o reinicio al arrancar**: la ISO ya incluye `nomodeset` de serie,
+  así que no hace falta editar GRUB. El sistema instalado también lo hereda (vía
+  `/etc/default/grub.d/99-macbook-nomodeset.cfg`), porque el modesetting de i915 en la
+  Iris Pro 5200 cuelga con el kernel 6.12 de trixie. Si quieres probar la aceleración
+  gráfica más adelante, borra ese archivo y ejecuta `sudo update-grub`; si vuelve a
+  colgarse, arranca una vez editando GRUB y añadiendo `nomodeset`.
+- **Vídeo por software y sin salidas externas**: es consecuencia de `nomodeset`
+  (renderizado con llvmpipe); al recuperar el driver i915 desaparece.
 - **Consola de diagnóstico**: si la sesión gráfica no responde pero la máquina está
   viva, pulsa `Ctrl+Alt+F2` para pasar a una consola de texto y ejecuta `dmesg`.
 - **Windows no arranca tras un intento de instalación**: no escribas nada más y

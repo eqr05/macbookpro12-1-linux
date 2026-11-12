@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Guia de comandos
+Comment=Copia la guia en espanol al escritorio
+Exec=/usr/local/bin/colocar-ayuda.sh
+Terminal=false
+NoDisplay=true
+OnlyShowIn=XFCE;
+X-GNOME-Autostart-Delay=4

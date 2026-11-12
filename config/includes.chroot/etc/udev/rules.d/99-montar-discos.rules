@@ -1,0 +1,3 @@
+# Monta las particiones internas que aparezcan despues del arranque
+# (por ejemplo, un disco de datos conectado o un cambio de tabla).
+ACTION=="add|change", SUBSYSTEM=="block", ENV{DEVTYPE}=="partition", ENV{ID_FS_USAGE}=="filesystem", TAG+="systemd", ENV{SYSTEMD_WANTS}+="montar-discos.service"
