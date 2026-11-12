@@ -1,0 +1,58 @@
+#!/bin/sh
+# Anade al menu GRUB entradas de prueba con i915 activado (sin nomodeset).
+# Se ejecuta al final de la etapa binary, con cwd = binary, despues de que
+# live-build haya generado boot/grub/grub.cfg y antes de crear la ISO.
+set -e
+
+CFG=boot/grub/grub.cfg
+[ -f "$CFG" ] || exit 0
+grep -q "Probar i915" "$CFG" && exit 0
+
+KERNEL=$(sed -n 's/^[[:space:]]*linux[[:space:]]\+\([^[:space:]]\+\).*/\1/p' "$CFG" | head -n 1)
+INITRD=$(sed -n 's/^[[:space:]]*initrd[[:space:]]\+\([^[:space:]]\+\).*/\1/p' "$CFG" | head -n 1)
+APPEND=$(sed -n 's/^[[:space:]]*linux[[:space:]]\+[^[:space:]]\+[[:space:]]\+//p' "$CFG" | head -n 1)
+
+[ -n "$KERNEL" ] && [ -n "$INITRD" ] && [ -n "$APPEND" ] || exit 0
+
+# Misma linea de comandos que el arranque normal, pero sin nomodeset
+BASE=$(printf '%s\n' "$APPEND" | sed -e 's/[[:space:]]\+nomodeset//g' -e 's/^nomodeset[[:space:]]*//')
+
+C1="intel_iommu=off i915.enable_dc=0 i915.enable_psr=0 i915.enable_fbc=0"
+C2="$C1 i915.enable_rc6=0"
+C3="$C1 i915.enable_execlists=0 i915.enable_semaphores=0"
+C4="$C1 i915.enable_ips=0 i915.fastboot=0"
+C5="$C1 acpi_osi=Darwin"
+C6="$C1 i915.enable_rc6=0 i915.enable_execlists=0 i915.enable_semaphores=0 i915.enable_ips=0 i915.fastboot=0 acpi_osi=Darwin"
+
+# Quita parametros repetidos: la base ya trae intel_iommu, psr y fbc
+sin_repetir() {
+	printf '%s\n' "$1" | tr ' ' '\n' | awk 'NF && !visto[$0]++' | tr '\n' ' ' | sed 's/ *$//'
+}
+
+entrada() {
+	cat <<END
+	menuentry '$1' {
+		linux	$KERNEL $(sin_repetir "$BASE $2")
+		initrd	$INITRD
+	}
+END
+}
+
+{
+	cat <<'END'
+
+# --- MacBook Linux: pruebas de i915 (anadido por el hook 0200-menu-i915) ---
+# El arranque normal usa nomodeset. Estas entradas activan el driver
+# grafico real para recuperar aceleracion y HDMI (video y audio).
+submenu 'Probar i915 (puede colgar) {' {
+END
+	entrada '1. Mitigaciones basicas (dc, psr, fbc)' "$C1"
+	entrada '2. Basicas + rc6 desactivado' "$C2"
+	entrada '3. Basicas + execlists/semaphores desactivados' "$C3"
+	entrada '4. Basicas + ips/fastboot desactivados' "$C4"
+	entrada '5. Basicas + acpi_osi=Darwin' "$C5"
+	entrada '6. Todo junto (maxima compatibilidad)' "$C6"
+	echo '}'
+} >> "$CFG"
+
+echo "menu GRUB: entradas de prueba i915 anadidas"

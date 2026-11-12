@@ -198,8 +198,31 @@ el Bluetooth, los altavoces y la Ethernet USB funcionan normal.
 
   Ver que driver esta activo:
       lspci -k | grep -A3 -i vga
-  Probar el driver i915 (puede colgar: hazlo con el Mac enchufado
-  y con un USB de rescate a mano):
+
+MENU DE PRUEBA PARA RECUPERAR HDMI
+El menu GRUB del USB trae el submenu "Probar i915 (puede colgar)" con
+seis combinaciones de parametros. Arranca, elige una y espera: si en
+2-3 minutos no aparece el escritorio, apaga manteniendo el boton.
+Ninguna escribe en el disco, el USB es de solo lectura.
+
+  1. Mitigaciones basicas (dc, psr, fbc)
+  2. Basicas + rc6 desactivado
+  3. Basicas + execlists/semaphores desactivados
+  4. Basicas + ips/fastboot desactivados
+  5. Basicas + acpi_osi=Darwin
+  6. Todo junto (maxima compatibilidad)
+
+Si una funciona (escritorio, y luego HDMI con imagen y sonido):
+      lspci -k | grep -A3 -i vga      debe decir "Kernel driver in use: i915"
+      aplay -l                        debe listar el HDMI
+Para dejarla fija en el sistema instalado:
+      sudo nano /etc/default/grub.d/99-macbook-nomodeset.cfg
+  y deja, sin "nomodeset", los parametros que funcionaron, por ejemplo:
+      GRUB_CMDLINE_LINUX_DEFAULT="${GRUB_CMDLINE_LINUX_DEFAULT} i915.enable_dc=0"
+      sudo update-grub
+Si vuelve a colgar, arranca el live y repite la prueba.
+
+  Probar el driver i915 a mano (equivale al menu):
       sudo rm /etc/default/grub.d/99-macbook-nomodeset.cfg
       sudo update-grub
       sudo reboot
@@ -361,5 +384,5 @@ Se llena el disco                       -> sudo apt clean; revisa
 - Pruebas: MacBookPro11,4 real; QEMU 11.1 en Windows como apoyo.
 - Repositorio y releases: github.com/eqr05/macbookpro12-1-linux
 
-Version de esta guia: build-6 (12-11-2026)
+Version de esta guia: build-7 (12-11-2026)
 ================================================================

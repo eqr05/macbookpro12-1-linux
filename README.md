@@ -101,6 +101,33 @@ Si el Mac sigue arrancando macOS directamente, bendice GRUB desde macOS:
 sudo bless --mount /Volumes/EFI --setBoot --file /Volumes/EFI/EFI/debian/grubx64.efi
 ```
 
+## Menú de prueba de i915 (recuperar HDMI)
+
+El arranque por defecto usa `nomodeset`, que deja todo funcionando salvo la GPU:
+sin aceleración y sin HDMI (el audio HDMI depende del driver gráfico). Para
+intentar recuperarlo, el menú GRUB del USB trae el submenú **«Probar i915 (puede
+colgar)»** con seis combinaciones:
+
+1. `i915.enable_dc=0` + mitigaciones de base (psr, fbc, iommu)
+2. la 1 + `i915.enable_rc6=0`
+3. la 1 + `i915.enable_execlists=0 i915.enable_semaphores=0`
+4. la 1 + `i915.enable_ips=0 i915.fastboot=0`
+5. la 1 + `acpi_osi=Darwin`
+6. todas juntas
+
+Se arrancan desde el USB (solo lectura, no toca el disco). Si una funciona:
+
+```sh
+lspci -k | grep -A3 -i vga   # debe decir "Kernel driver in use: i915"
+aplay -l                     # debe listar el HDMI
+```
+
+Para fijarla en el sistema instalado, edita
+`/etc/default/grub.d/99-macbook-nomodeset.cfg`: quita `nomodeset` y pon los
+parámetros que funcionaron, luego `sudo update-grub`. El menú lo genera
+`config/hooks/live/0200-menu-i915.hook.binary`, que añade las entradas a
+`boot/grub/grub.cfg` después de que live-build lo genere.
+
 ## Problemas conocidos
 
 - **Pantalla congelada o reinicio al arrancar**: la ISO ya incluye `nomodeset` de serie,
