@@ -49,12 +49,12 @@ jobs:
             test -s binary/live/filesystem.squashfs
             unsquashfs -l binary/live/filesystem.squashfs | grep -q brcmfmac43602-pcie.bin
             unsquashfs -l binary/live/filesystem.squashfs | grep -q calamares
-            unsquashfs -l binary/live/filesystem.squashfs | grep -q 'usr/local/sbin/montar-discos'
-            unsquashfs -l binary/live/filesystem.squashfs | grep -q 'usr/share/macbook-linux/Comandos-Linux.txt'
-            unsquashfs -l binary/live/filesystem.squashfs | grep -q 'etc/default/grub.d/99-macbook-nomodeset.cfg'
-            unsquashfs -l binary/live/filesystem.squashfs | grep -q 'etc/default/grub.d/98-macbook-estabilidad.cfg'
+            unsquashfs -l binary/live/filesystem.squashfs | grep -q "usr/local/sbin/montar-discos"
+            unsquashfs -l binary/live/filesystem.squashfs | grep -q "usr/share/macbook-linux/Comandos-Linux.txt"
+            unsquashfs -l binary/live/filesystem.squashfs | grep -q "etc/default/grub.d/99-macbook-nomodeset.cfg"
+            unsquashfs -l binary/live/filesystem.squashfs | grep -q "etc/default/grub.d/98-macbook-estabilidad.cfg"
             unsquashfs -cat binary/live/filesystem.squashfs etc/default/grub.d/99-macbook-nomodeset.cfg | grep -q nomodeset
-            grep -q 'Probar i915' binary/boot/grub/grub.cfg
+            grep -q "Probar i915" binary/boot/grub/grub.cfg
             grep -c "menuentry" binary/boot/grub/grub.cfg
           '
 
